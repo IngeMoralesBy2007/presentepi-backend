@@ -1,0 +1,4 @@
+node_modules/
+bienestar.db
+bienestar.db-*
+.env
