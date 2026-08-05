@@ -14,9 +14,8 @@ const ExportController = {
         const asistenciasEstudiantes = AsistenciaModel.obtenerPorEvento(eventoId);
         const registrosExternos = RegistroExternoModel.obtenerPorEvento(eventoId);
 
-        // separa "YYYY-MM-DD HH:mm:ss" o "YYYY-MM-DDTHH:mm" en fecha y hora por separado
+        // separa "YYYY-MM-DD HH:mm:ss" o "YYYY-MM-DDTHH:mm" y nos quedamos solo con la fecha
         const soloFecha = (fechaHora) => (fechaHora ? String(fechaHora).split(/[ T]/)[0] : '');
-        const soloHora = (fechaHora) => (fechaHora ? (String(fechaHora).split(/[ T]/)[1] || '').slice(0, 8) : '');
 
         const workbook = new ExcelJS.Workbook();
         workbook.creator = 'Politecnico Internacional - PresentePI';
@@ -29,8 +28,7 @@ const ExportController = {
             { header: 'Nombre completo', key: 'nombre', width: 35 },
             { header: 'Programa', key: 'programa', width: 30 },
             { header: 'Codigo de carne', key: 'codigo', width: 20 },
-            { header: 'Fecha', key: 'fecha', width: 14 },
-            { header: 'Hora', key: 'hora', width: 12 }
+            { header: 'Fecha', key: 'fecha', width: 14 }
         ];
         hojaEstudiantes.getRow(1).font = { bold: true };
         asistenciasEstudiantes.forEach(a => {
@@ -39,8 +37,7 @@ const ExportController = {
                 nombre: a.nombre_completo_snapshot,
                 programa: a.programa_snapshot,
                 codigo: a.codigo_carne_escaneado,
-                fecha: soloFecha(a.fecha_hora_registro),
-                hora: soloHora(a.fecha_hora_registro)
+                fecha: soloFecha(a.fecha_hora_registro)
             });
         });
 
@@ -53,8 +50,7 @@ const ExportController = {
             { header: 'Correo', key: 'correo', width: 30 },
             { header: 'Telefono', key: 'telefono', width: 18 },
             { header: 'Procedencia', key: 'procedencia', width: 25 },
-            { header: 'Fecha', key: 'fecha', width: 14 },
-            { header: 'Hora', key: 'hora', width: 12 }
+            { header: 'Fecha', key: 'fecha', width: 14 }
         ];
         hojaExternos.getRow(1).font = { bold: true };
         registrosExternos.forEach(r => {
@@ -65,8 +61,7 @@ const ExportController = {
                 correo: r.correo,
                 telefono: r.telefono,
                 procedencia: r.procedencia,
-                fecha: soloFecha(r.fecha_hora_registro),
-                hora: soloHora(r.fecha_hora_registro)
+                fecha: soloFecha(r.fecha_hora_registro)
             });
         });
 

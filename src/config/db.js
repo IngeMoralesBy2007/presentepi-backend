@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS asistencias (
     codigo_carne_escaneado TEXT,
     nombre_completo_snapshot TEXT,
     programa_snapshot TEXT,
-    fecha_hora_registro TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+    fecha_hora_registro TEXT NOT NULL DEFAULT (datetime('now', '-5 hours')),
     FOREIGN KEY (evento_id) REFERENCES eventos(id),
     FOREIGN KEY (estudiante_id) REFERENCES estudiantes(id),
     UNIQUE (evento_id, estudiante_id)
@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS registros_externos (
     correo TEXT,
     telefono TEXT,
     procedencia TEXT,
-    fecha_hora_registro TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+    fecha_hora_registro TEXT NOT NULL DEFAULT (datetime('now', '-5 hours')),
     FOREIGN KEY (evento_id) REFERENCES eventos(id)
 );
 `);
