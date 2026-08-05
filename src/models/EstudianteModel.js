@@ -15,6 +15,12 @@ const EstudianteModel = {
         return db.prepare('SELECT * FROM estudiantes WHERE codigo_carne = ?').get(codigoCarne);
     },
 
+    // Usado en el flujo de lectura de datos impresos del carne (OCR),
+    // cuando no hay codigo de barras pre-registrado.
+    obtenerPorDocumento(documento) {
+        return db.prepare('SELECT * FROM estudiantes WHERE documento = ?').get(documento);
+    },
+
     crear(estudiante) {
         const stmt = db.prepare(`
             INSERT INTO estudiantes (codigo_carne, nombre_completo, documento, programa, ciclo, correo, telefono, activo)
