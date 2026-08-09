@@ -11,8 +11,10 @@ const ExportController = {
         const evento = await EventoModel.obtenerPorId(eventoId);
         if (!evento) return res.status(404).json({ error: 'Evento no encontrado' });
 
-        const asistenciasEstudiantes = await AsistenciaModel.obtenerPorEvento(eventoId);
-        const registrosExternos = await RegistroExternoModel.obtenerPorEvento(eventoId);
+        const [asistenciasEstudiantes, registrosExternos] = await Promise.all([
+            AsistenciaModel.obtenerPorEvento(eventoId),
+            RegistroExternoModel.obtenerPorEvento(eventoId)
+        ]);
 
         // separa "YYYY-MM-DD HH:mm:ss" o "YYYY-MM-DDTHH:mm" y nos quedamos solo con la fecha
         const soloFecha = (fechaHora) => (fechaHora ? String(fechaHora).split(/[ T]/)[0] : '');

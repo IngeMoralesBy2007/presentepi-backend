@@ -26,8 +26,11 @@ const RegistroExternoController = {
         }
 
         if (evento.cupo_maximo > 0) {
-            const totalActual = (await AsistenciaModel.contarPorEvento(eventoId)) + (await RegistroExternoModel.contarPorEvento(eventoId));
-            if (totalActual >= evento.cupo_maximo) {
+            const [totalAsistencias, totalExternos] = await Promise.all([
+                AsistenciaModel.contarPorEvento(eventoId),
+                RegistroExternoModel.contarPorEvento(eventoId)
+            ]);
+            if (totalAsistencias + totalExternos >= evento.cupo_maximo) {
                 return res.status(409).json({ error: `Se alcanzo el cupo maximo del evento (${evento.cupo_maximo})` });
             }
         }

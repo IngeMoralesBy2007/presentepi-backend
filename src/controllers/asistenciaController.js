@@ -27,20 +27,30 @@ const AsistenciaController = {
             return res.status(400).json({ error: `rol es obligatorio y debe ser uno de: ${ROLES_VALIDOS.join(', ')}` });
         }
 
-        const evento = await EventoModel.obtenerPorId(eventoId);
+        // La busqueda del evento y la busqueda de la persona por documento son
+        // consultas independientes entre si -> las hacemos al mismo tiempo en vez
+        // de una detras de otra, para no sumar viajes de ida y vuelta innecesarios.
+        const [evento, estudianteExistente] = await Promise.all([
+            EventoModel.obtenerPorId(eventoId),
+            EstudianteModel.obtenerPorDocumento(documento)
+        ]);
+
         if (!evento) return res.status(404).json({ error: 'Evento no encontrado' });
         if (evento.estado !== 'ACTIVO') {
             return res.status(409).json({ error: 'El evento no esta activo, no se puede registrar asistencia' });
         }
 
         if (evento.cupo_maximo > 0) {
-            const totalActual = (await AsistenciaModel.contarPorEvento(eventoId)) + (await RegistroExternoModel.contarPorEvento(eventoId));
-            if (totalActual >= evento.cupo_maximo) {
+            const [totalAsistencias, totalExternos] = await Promise.all([
+                AsistenciaModel.contarPorEvento(eventoId),
+                RegistroExternoModel.contarPorEvento(eventoId)
+            ]);
+            if (totalAsistencias + totalExternos >= evento.cupo_maximo) {
                 return res.status(409).json({ error: `Se alcanzo el cupo maximo del evento (${evento.cupo_maximo})` });
             }
         }
 
-        let estudiante = await EstudianteModel.obtenerPorDocumento(documento);
+        let estudiante = estudianteExistente;
         if (!estudiante) {
             try {
                 estudiante = await EstudianteModel.crear({

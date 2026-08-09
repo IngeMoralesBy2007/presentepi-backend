@@ -17,8 +17,10 @@ async function obtenerEventosConConteo(filtros) {
     const eventos = await EventoModel.buscarConFiltros(filtros);
 
     return Promise.all(eventos.map(async (evento) => {
-        const totalEstudiantes = await AsistenciaModel.contarPorEvento(evento.id);
-        const totalExternos = await RegistroExternoModel.contarPorEvento(evento.id);
+        const [totalEstudiantes, totalExternos] = await Promise.all([
+            AsistenciaModel.contarPorEvento(evento.id),
+            RegistroExternoModel.contarPorEvento(evento.id)
+        ]);
         return {
             ...evento,
             total_estudiantes: totalEstudiantes,
@@ -87,8 +89,17 @@ const ReporteController = {
         ];
         hojaDetalle.getRow(1).font = { bold: true };
 
-        for (const evento of eventos) {
-            const asistencias = await AsistenciaModel.obtenerPorEvento(evento.id);
+        // Traemos las asistencias y externos de TODOS los eventos filtrados al mismo
+        // tiempo (en paralelo), en vez de esperar evento por evento en fila.
+        const detallesPorEvento = await Promise.all(eventos.map(async (evento) => {
+            const [asistencias, externos] = await Promise.all([
+                AsistenciaModel.obtenerPorEvento(evento.id),
+                RegistroExternoModel.obtenerPorEvento(evento.id)
+            ]);
+            return { evento, asistencias, externos };
+        }));
+
+        for (const { evento, asistencias, externos } of detallesPorEvento) {
             asistencias.forEach((a) => {
                 hojaDetalle.addRow({
                     evento: evento.nombre,
@@ -103,7 +114,6 @@ const ReporteController = {
                 });
             });
 
-            const externos = await RegistroExternoModel.obtenerPorEvento(evento.id);
             externos.forEach((r) => {
                 hojaDetalle.addRow({
                     evento: evento.nombre,

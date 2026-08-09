@@ -6,7 +6,9 @@ const { Pool } = require('pg');
 // no siempre coincide con la cadena de confianza por defecto de Node).
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
+    ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false,
+    keepAlive: true, // reutiliza la conexion TCP en vez de renegociarla en cada consulta
+    max: 10
 });
 
 pool.on('error', (err) => {
