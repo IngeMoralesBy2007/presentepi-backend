@@ -1,72 +1,79 @@
-const db = require('../config/db');
+const { pool } = require('../config/db');
 
 const EstudianteModel = {
 
-    obtenerTodos() {
-        return db.prepare('SELECT * FROM estudiantes ORDER BY nombre_completo').all();
+    async obtenerTodos() {
+        const { rows } = await pool.query('SELECT * FROM estudiantes ORDER BY nombre_completo');
+        return rows;
     },
 
-    obtenerPorId(id) {
-        return db.prepare('SELECT * FROM estudiantes WHERE id = ?').get(id);
+    async obtenerPorId(id) {
+        const { rows } = await pool.query('SELECT * FROM estudiantes WHERE id = $1', [id]);
+        return rows[0] || null;
     },
 
     // Usado al escanear el codigo de barras del carne
-    obtenerPorCodigoCarne(codigoCarne) {
-        return db.prepare('SELECT * FROM estudiantes WHERE codigo_carne = ?').get(codigoCarne);
+    async obtenerPorCodigoCarne(codigoCarne) {
+        const { rows } = await pool.query('SELECT * FROM estudiantes WHERE codigo_carne = $1', [codigoCarne]);
+        return rows[0] || null;
     },
 
     // Usado en el flujo de lectura de datos impresos del carne (OCR),
     // cuando no hay codigo de barras pre-registrado.
-    obtenerPorDocumento(documento) {
-        return db.prepare('SELECT * FROM estudiantes WHERE documento = ?').get(documento);
+    async obtenerPorDocumento(documento) {
+        const { rows } = await pool.query('SELECT * FROM estudiantes WHERE documento = $1', [documento]);
+        return rows[0] || null;
     },
 
-    crear(estudiante) {
-        const stmt = db.prepare(`
-            INSERT INTO estudiantes (codigo_carne, nombre_completo, documento, programa, ciclo, correo, telefono, activo)
-            VALUES (@codigoCarne, @nombreCompleto, @documento, @programa, @ciclo, @correo, @telefono, @activo)
-        `);
-        const info = stmt.run({
-            codigoCarne: estudiante.codigoCarne,
-            nombreCompleto: estudiante.nombreCompleto,
-            documento: estudiante.documento || null,
-            programa: estudiante.programa || null,
-            ciclo: estudiante.ciclo || null,
-            correo: estudiante.correo || null,
-            telefono: estudiante.telefono || null,
-            activo: estudiante.activo === undefined ? 1 : (estudiante.activo ? 1 : 0)
-        });
-        return this.obtenerPorId(info.lastInsertRowid);
+    async crear(estudiante) {
+        const { rows } = await pool.query(
+            `INSERT INTO estudiantes (codigo_carne, nombre_completo, documento, programa, ciclo, correo, telefono, activo)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+             RETURNING *`,
+            [
+                estudiante.codigoCarne,
+                estudiante.nombreCompleto,
+                estudiante.documento || null,
+                estudiante.programa || null,
+                estudiante.ciclo || null,
+                estudiante.correo || null,
+                estudiante.telefono || null,
+                estudiante.activo === undefined ? true : !!estudiante.activo
+            ]
+        );
+        return rows[0];
     },
 
-    actualizar(id, estudiante) {
-        db.prepare(`
-            UPDATE estudiantes SET
-                codigo_carne = @codigoCarne,
-                nombre_completo = @nombreCompleto,
-                documento = @documento,
-                programa = @programa,
-                ciclo = @ciclo,
-                correo = @correo,
-                telefono = @telefono,
-                activo = @activo
-            WHERE id = @id
-        `).run({
-            id,
-            codigoCarne: estudiante.codigoCarne,
-            nombreCompleto: estudiante.nombreCompleto,
-            documento: estudiante.documento || null,
-            programa: estudiante.programa || null,
-            ciclo: estudiante.ciclo || null,
-            correo: estudiante.correo || null,
-            telefono: estudiante.telefono || null,
-            activo: estudiante.activo ? 1 : 0
-        });
-        return this.obtenerPorId(id);
+    async actualizar(id, estudiante) {
+        const { rows } = await pool.query(
+            `UPDATE estudiantes SET
+                codigo_carne = $1,
+                nombre_completo = $2,
+                documento = $3,
+                programa = $4,
+                ciclo = $5,
+                correo = $6,
+                telefono = $7,
+                activo = $8
+             WHERE id = $9
+             RETURNING *`,
+            [
+                estudiante.codigoCarne,
+                estudiante.nombreCompleto,
+                estudiante.documento || null,
+                estudiante.programa || null,
+                estudiante.ciclo || null,
+                estudiante.correo || null,
+                estudiante.telefono || null,
+                !!estudiante.activo,
+                id
+            ]
+        );
+        return rows[0] || null;
     },
 
-    eliminar(id) {
-        return db.prepare('DELETE FROM estudiantes WHERE id = ?').run(id);
+    async eliminar(id) {
+        return pool.query('DELETE FROM estudiantes WHERE id = $1', [id]);
     }
 };
 

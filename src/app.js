@@ -1,8 +1,10 @@
 const express = require('express');
 const cors = require('cors');
+require('express-async-errors');
 
 const estudianteRoutes = require('./routes/estudianteRoutes');
 const eventoRoutes = require('./routes/eventoRoutes');
+const reporteRoutes = require('./routes/reporteRoutes');
 
 const app = express();
 
@@ -16,6 +18,7 @@ app.get('/api/health', (req, res) => {
 
 app.use('/api/estudiantes', estudianteRoutes);
 app.use('/api/eventos', eventoRoutes);
+app.use('/api/reportes', reporteRoutes);
 
 // Manejo de rutas no encontradas
 app.use((req, res) => {

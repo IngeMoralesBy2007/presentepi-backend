@@ -8,11 +8,11 @@ const ExportController = {
     // GET /api/eventos/:eventoId/export/excel
     async exportarExcel(req, res) {
         const { eventoId } = req.params;
-        const evento = EventoModel.obtenerPorId(eventoId);
+        const evento = await EventoModel.obtenerPorId(eventoId);
         if (!evento) return res.status(404).json({ error: 'Evento no encontrado' });
 
-        const asistenciasEstudiantes = AsistenciaModel.obtenerPorEvento(eventoId);
-        const registrosExternos = RegistroExternoModel.obtenerPorEvento(eventoId);
+        const asistenciasEstudiantes = await AsistenciaModel.obtenerPorEvento(eventoId);
+        const registrosExternos = await RegistroExternoModel.obtenerPorEvento(eventoId);
 
         // separa "YYYY-MM-DD HH:mm:ss" o "YYYY-MM-DDTHH:mm" y nos quedamos solo con la fecha
         const soloFecha = (fechaHora) => (fechaHora ? String(fechaHora).split(/[ T]/)[0] : '');
@@ -21,13 +21,14 @@ const ExportController = {
         workbook.creator = 'Politecnico Internacional - PresentePI';
         workbook.created = new Date();
 
-        // --- Hoja de estudiantes ---
-        const hojaEstudiantes = workbook.addWorksheet('Estudiantes');
+        // --- Hoja de asistentes con carné (estudiantes, docentes, personal) ---
+        const hojaEstudiantes = workbook.addWorksheet('Asistentes');
         hojaEstudiantes.columns = [
             { header: 'Evento', key: 'evento', width: 30 },
             { header: 'Nombre completo', key: 'nombre', width: 35 },
+            { header: 'Rol', key: 'rol', width: 20 },
             { header: 'Programa', key: 'programa', width: 30 },
-            { header: 'Codigo de carne', key: 'codigo', width: 20 },
+            { header: 'Documento/Código', key: 'codigo', width: 20 },
             { header: 'Fecha', key: 'fecha', width: 14 }
         ];
         hojaEstudiantes.getRow(1).font = { bold: true };
@@ -35,6 +36,7 @@ const ExportController = {
             hojaEstudiantes.addRow({
                 evento: evento.nombre,
                 nombre: a.nombre_completo_snapshot,
+                rol: a.rol,
                 programa: a.programa_snapshot,
                 codigo: a.codigo_carne_escaneado,
                 fecha: soloFecha(a.fecha_hora_registro)
@@ -72,7 +74,7 @@ const ExportController = {
         hojaResumen.addRow({ dato: 'Evento', valor: evento.nombre });
         hojaResumen.addRow({ dato: 'Lugar', valor: evento.lugar });
         hojaResumen.addRow({ dato: 'Fecha del evento', valor: soloFecha(evento.fecha_hora_inicio) });
-        hojaResumen.addRow({ dato: 'Total estudiantes', valor: asistenciasEstudiantes.length });
+        hojaResumen.addRow({ dato: 'Total asistentes (carné)', valor: asistenciasEstudiantes.length });
         hojaResumen.addRow({ dato: 'Total externos', valor: registrosExternos.length });
         hojaResumen.addRow({ dato: 'Total general', valor: asistenciasEstudiantes.length + registrosExternos.length });
 

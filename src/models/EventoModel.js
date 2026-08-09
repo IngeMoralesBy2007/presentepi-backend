@@ -1,70 +1,108 @@
-const db = require('../config/db');
+const { pool } = require('../config/db');
 
 const EventoModel = {
 
-    obtenerTodos() {
-        return db.prepare('SELECT * FROM eventos ORDER BY fecha_hora_inicio DESC').all();
+    async obtenerTodos() {
+        const { rows } = await pool.query('SELECT * FROM eventos ORDER BY fecha_hora_inicio DESC');
+        return rows;
     },
 
-    obtenerPorId(id) {
-        return db.prepare('SELECT * FROM eventos WHERE id = ?').get(id);
+    async obtenerPorId(id) {
+        const { rows } = await pool.query('SELECT * FROM eventos WHERE id = $1', [id]);
+        return rows[0] || null;
     },
 
-    obtenerPorEstado(estado) {
-        return db.prepare('SELECT * FROM eventos WHERE estado = ? ORDER BY fecha_hora_inicio').all(estado);
+    async obtenerPorEstado(estado) {
+        const { rows } = await pool.query('SELECT * FROM eventos WHERE estado = $1 ORDER BY fecha_hora_inicio', [estado]);
+        return rows;
     },
 
-    crear(evento) {
-        const stmt = db.prepare(`
-            INSERT INTO eventos (nombre, descripcion, fecha_hora_inicio, fecha_hora_fin, lugar, responsable, cupo_maximo, estado)
-            VALUES (@nombre, @descripcion, @fechaHoraInicio, @fechaHoraFin, @lugar, @responsable, @cupoMaximo, @estado)
-        `);
-        const info = stmt.run({
-            nombre: evento.nombre,
-            descripcion: evento.descripcion || null,
-            fechaHoraInicio: evento.fechaHoraInicio,
-            fechaHoraFin: evento.fechaHoraFin || null,
-            lugar: evento.lugar || null,
-            responsable: evento.responsable || null,
-            cupoMaximo: evento.cupoMaximo || 0,
-            estado: evento.estado || 'PROGRAMADO'
-        });
-        return this.obtenerPorId(info.lastInsertRowid);
+    // Usado por el modulo de Consultas: filtros combinables por sede, nombre y rango de fechas.
+    // La fecha se compara solo por los primeros 10 caracteres (YYYY-MM-DD) para que
+    // funcione sin importar si el separador guardado es espacio o "T".
+    async buscarConFiltros({ lugar, nombre, fechaDesde, fechaHasta } = {}) {
+        const condiciones = [];
+        const valores = [];
+
+        if (lugar) {
+            valores.push(`%${lugar}%`);
+            condiciones.push(`lugar ILIKE $${valores.length}`);
+        }
+        if (nombre) {
+            valores.push(`%${nombre}%`);
+            condiciones.push(`nombre ILIKE $${valores.length}`);
+        }
+        if (fechaDesde) {
+            valores.push(fechaDesde);
+            condiciones.push(`SUBSTRING(fecha_hora_inicio, 1, 10) >= $${valores.length}`);
+        }
+        if (fechaHasta) {
+            valores.push(fechaHasta);
+            condiciones.push(`SUBSTRING(fecha_hora_inicio, 1, 10) <= $${valores.length}`);
+        }
+
+        const where = condiciones.length ? `WHERE ${condiciones.join(' AND ')}` : '';
+        const { rows } = await pool.query(
+            `SELECT * FROM eventos ${where} ORDER BY fecha_hora_inicio DESC`,
+            valores
+        );
+        return rows;
     },
 
-    actualizar(id, evento) {
-        db.prepare(`
-            UPDATE eventos SET
-                nombre = @nombre,
-                descripcion = @descripcion,
-                fecha_hora_inicio = @fechaHoraInicio,
-                fecha_hora_fin = @fechaHoraFin,
-                lugar = @lugar,
-                responsable = @responsable,
-                cupo_maximo = @cupoMaximo,
-                estado = @estado
-            WHERE id = @id
-        `).run({
-            id,
-            nombre: evento.nombre,
-            descripcion: evento.descripcion || null,
-            fechaHoraInicio: evento.fechaHoraInicio,
-            fechaHoraFin: evento.fechaHoraFin || null,
-            lugar: evento.lugar || null,
-            responsable: evento.responsable || null,
-            cupoMaximo: evento.cupoMaximo || 0,
-            estado: evento.estado
-        });
-        return this.obtenerPorId(id);
+    async crear(evento) {
+        const { rows } = await pool.query(
+            `INSERT INTO eventos (nombre, descripcion, fecha_hora_inicio, fecha_hora_fin, lugar, responsable, cupo_maximo, estado)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+             RETURNING *`,
+            [
+                evento.nombre,
+                evento.descripcion || null,
+                evento.fechaHoraInicio,
+                evento.fechaHoraFin || null,
+                evento.lugar || null,
+                evento.responsable || null,
+                evento.cupoMaximo || 0,
+                evento.estado || 'PROGRAMADO'
+            ]
+        );
+        return rows[0];
     },
 
-    cambiarEstado(id, estado) {
-        db.prepare('UPDATE eventos SET estado = ? WHERE id = ?').run(estado, id);
-        return this.obtenerPorId(id);
+    async actualizar(id, evento) {
+        const { rows } = await pool.query(
+            `UPDATE eventos SET
+                nombre = $1,
+                descripcion = $2,
+                fecha_hora_inicio = $3,
+                fecha_hora_fin = $4,
+                lugar = $5,
+                responsable = $6,
+                cupo_maximo = $7,
+                estado = $8
+             WHERE id = $9
+             RETURNING *`,
+            [
+                evento.nombre,
+                evento.descripcion || null,
+                evento.fechaHoraInicio,
+                evento.fechaHoraFin || null,
+                evento.lugar || null,
+                evento.responsable || null,
+                evento.cupoMaximo || 0,
+                evento.estado,
+                id
+            ]
+        );
+        return rows[0] || null;
     },
 
-    eliminar(id) {
-        return db.prepare('DELETE FROM eventos WHERE id = ?').run(id);
+    async cambiarEstado(id, estado) {
+        const { rows } = await pool.query('UPDATE eventos SET estado = $1 WHERE id = $2 RETURNING *', [estado, id]);
+        return rows[0] || null;
+    },
+
+    async eliminar(id) {
+        return pool.query('DELETE FROM eventos WHERE id = $1', [id]);
     }
 };
 

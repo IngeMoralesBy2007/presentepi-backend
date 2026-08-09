@@ -1,70 +1,78 @@
-const Database = require('better-sqlite3');
-const path = require('path');
+const { Pool } = require('pg');
 
-// Archivo local de SQLite (se crea automaticamente si no existe)
-const dbPath = path.join(__dirname, '..', '..', 'bienestar.db');
-const db = new Database(dbPath);
+// Cadena de conexion a Supabase (o cualquier Postgres) via variable de entorno.
+// En Render se configura como DATABASE_URL en la pestaña "Environment".
+// Supabase requiere SSL, por eso el rejectUnauthorized:false (su certificado
+// no siempre coincide con la cadena de confianza por defecto de Node).
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
+});
 
-db.pragma('journal_mode = WAL');
-db.pragma('foreign_keys = ON');
+pool.on('error', (err) => {
+    console.error('Error inesperado en el pool de Postgres:', err.message);
+});
 
-// --- Creacion de tablas ---
+// --- Creacion de tablas (se ejecuta al arrancar; CREATE TABLE IF NOT EXISTS es seguro repetir) ---
+async function initSchema() {
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS estudiantes (
+            id SERIAL PRIMARY KEY,
+            codigo_carne TEXT UNIQUE NOT NULL,
+            nombre_completo TEXT NOT NULL,
+            documento TEXT,
+            programa TEXT,
+            ciclo TEXT,
+            correo TEXT,
+            telefono TEXT,
+            activo BOOLEAN NOT NULL DEFAULT true
+        );
+    `);
 
-db.exec(`
-CREATE TABLE IF NOT EXISTS estudiantes (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    codigo_carne TEXT UNIQUE NOT NULL,
-    nombre_completo TEXT NOT NULL,
-    documento TEXT,
-    programa TEXT,
-    ciclo TEXT,
-    correo TEXT,
-    telefono TEXT,
-    activo INTEGER NOT NULL DEFAULT 1
-);
-`);
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS eventos (
+            id SERIAL PRIMARY KEY,
+            nombre TEXT NOT NULL,
+            descripcion TEXT,
+            fecha_hora_inicio TEXT NOT NULL,
+            fecha_hora_fin TEXT,
+            lugar TEXT,
+            responsable TEXT,
+            cupo_maximo INTEGER NOT NULL DEFAULT 0,
+            estado TEXT NOT NULL DEFAULT 'PROGRAMADO'
+        );
+    `);
 
-db.exec(`
-CREATE TABLE IF NOT EXISTS eventos (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    nombre TEXT NOT NULL,
-    descripcion TEXT,
-    fecha_hora_inicio TEXT NOT NULL,
-    fecha_hora_fin TEXT,
-    lugar TEXT,
-    responsable TEXT,
-    cupo_maximo INTEGER NOT NULL DEFAULT 0,
-    estado TEXT NOT NULL DEFAULT 'PROGRAMADO'
-);
-`);
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS asistencias (
+            id SERIAL PRIMARY KEY,
+            evento_id INTEGER NOT NULL REFERENCES eventos(id),
+            estudiante_id INTEGER NOT NULL REFERENCES estudiantes(id),
+            codigo_carne_escaneado TEXT,
+            nombre_completo_snapshot TEXT,
+            programa_snapshot TEXT,
+            rol TEXT NOT NULL DEFAULT 'ESTUDIANTE',
+            fecha_hora_registro TEXT NOT NULL DEFAULT (to_char(now() AT TIME ZONE 'America/Bogota', 'YYYY-MM-DD HH24:MI:SS')),
+            UNIQUE (evento_id, estudiante_id)
+        );
+    `);
 
-db.exec(`
-CREATE TABLE IF NOT EXISTS asistencias (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    evento_id INTEGER NOT NULL,
-    estudiante_id INTEGER NOT NULL,
-    codigo_carne_escaneado TEXT,
-    nombre_completo_snapshot TEXT,
-    programa_snapshot TEXT,
-    fecha_hora_registro TEXT NOT NULL DEFAULT (datetime('now', '-5 hours')),
-    FOREIGN KEY (evento_id) REFERENCES eventos(id),
-    FOREIGN KEY (estudiante_id) REFERENCES estudiantes(id),
-    UNIQUE (evento_id, estudiante_id)
-);
-`);
+    // Migracion segura: si la tabla ya existia de antes (Supabase es persistente),
+    // aseguramos que tenga la columna rol aunque se haya creado sin ella.
+    await pool.query(`ALTER TABLE asistencias ADD COLUMN IF NOT EXISTS rol TEXT NOT NULL DEFAULT 'ESTUDIANTE';`);
 
-db.exec(`
-CREATE TABLE IF NOT EXISTS registros_externos (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    evento_id INTEGER NOT NULL,
-    nombre_completo TEXT NOT NULL,
-    documento TEXT,
-    correo TEXT,
-    telefono TEXT,
-    procedencia TEXT,
-    fecha_hora_registro TEXT NOT NULL DEFAULT (datetime('now', '-5 hours')),
-    FOREIGN KEY (evento_id) REFERENCES eventos(id)
-);
-`);
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS registros_externos (
+            id SERIAL PRIMARY KEY,
+            evento_id INTEGER NOT NULL REFERENCES eventos(id),
+            nombre_completo TEXT NOT NULL,
+            documento TEXT,
+            correo TEXT,
+            telefono TEXT,
+            procedencia TEXT,
+            fecha_hora_registro TEXT NOT NULL DEFAULT (to_char(now() AT TIME ZONE 'America/Bogota', 'YYYY-MM-DD HH24:MI:SS'))
+        );
+    `);
+}
 
-module.exports = db;
+module.exports = { pool, initSchema };
