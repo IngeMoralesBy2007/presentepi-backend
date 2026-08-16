@@ -39,6 +39,7 @@ async function initSchema() {
             fecha_hora_inicio TEXT NOT NULL,
             fecha_hora_fin TEXT,
             lugar TEXT,
+            sede TEXT,
             responsable TEXT,
             cupo_maximo INTEGER NOT NULL DEFAULT 0,
             estado TEXT NOT NULL DEFAULT 'PROGRAMADO'
@@ -54,14 +55,17 @@ async function initSchema() {
             nombre_completo_snapshot TEXT,
             programa_snapshot TEXT,
             rol TEXT NOT NULL DEFAULT 'ESTUDIANTE',
+            sede TEXT,
             fecha_hora_registro TEXT NOT NULL DEFAULT (to_char(now() AT TIME ZONE 'America/Bogota', 'YYYY-MM-DD HH24:MI:SS')),
             UNIQUE (evento_id, estudiante_id)
         );
     `);
 
-    // Migracion segura: si la tabla ya existia de antes (Supabase es persistente),
-    // aseguramos que tenga la columna rol aunque se haya creado sin ella.
+    // Migraciones seguras: si las tablas ya existian de antes (Supabase es persistente),
+    // aseguramos que tengan las columnas nuevas aunque se hayan creado sin ellas.
     await pool.query(`ALTER TABLE asistencias ADD COLUMN IF NOT EXISTS rol TEXT NOT NULL DEFAULT 'ESTUDIANTE';`);
+    await pool.query(`ALTER TABLE asistencias ADD COLUMN IF NOT EXISTS sede TEXT;`);
+    await pool.query(`ALTER TABLE eventos ADD COLUMN IF NOT EXISTS sede TEXT;`);
 
     await pool.query(`
         CREATE TABLE IF NOT EXISTS registros_externos (

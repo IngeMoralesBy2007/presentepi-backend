@@ -20,13 +20,13 @@ const EventoModel = {
     // Usado por el modulo de Consultas: filtros combinables por sede, nombre y rango de fechas.
     // La fecha se compara solo por los primeros 10 caracteres (YYYY-MM-DD) para que
     // funcione sin importar si el separador guardado es espacio o "T".
-    async buscarConFiltros({ lugar, nombre, fechaDesde, fechaHasta } = {}) {
+    async buscarConFiltros({ sede, nombre, fechaDesde, fechaHasta } = {}) {
         const condiciones = [];
         const valores = [];
 
-        if (lugar) {
-            valores.push(`%${lugar}%`);
-            condiciones.push(`lugar ILIKE $${valores.length}`);
+        if (sede) {
+            valores.push(`%${sede}%`);
+            condiciones.push(`sede ILIKE $${valores.length}`);
         }
         if (nombre) {
             valores.push(`%${nombre}%`);
@@ -51,8 +51,8 @@ const EventoModel = {
 
     async crear(evento) {
         const { rows } = await pool.query(
-            `INSERT INTO eventos (nombre, descripcion, fecha_hora_inicio, fecha_hora_fin, lugar, responsable, cupo_maximo, estado)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            `INSERT INTO eventos (nombre, descripcion, fecha_hora_inicio, fecha_hora_fin, lugar, sede, responsable, cupo_maximo, estado)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
              RETURNING *`,
             [
                 evento.nombre,
@@ -60,6 +60,7 @@ const EventoModel = {
                 evento.fechaHoraInicio,
                 evento.fechaHoraFin || null,
                 evento.lugar || null,
+                evento.sede || null,
                 evento.responsable || null,
                 evento.cupoMaximo || 0,
                 evento.estado || 'PROGRAMADO'
@@ -76,10 +77,11 @@ const EventoModel = {
                 fecha_hora_inicio = $3,
                 fecha_hora_fin = $4,
                 lugar = $5,
-                responsable = $6,
-                cupo_maximo = $7,
-                estado = $8
-             WHERE id = $9
+                sede = $6,
+                responsable = $7,
+                cupo_maximo = $8,
+                estado = $9
+             WHERE id = $10
              RETURNING *`,
             [
                 evento.nombre,
@@ -87,6 +89,7 @@ const EventoModel = {
                 evento.fechaHoraInicio,
                 evento.fechaHoraFin || null,
                 evento.lugar || null,
+                evento.sede || null,
                 evento.responsable || null,
                 evento.cupoMaximo || 0,
                 evento.estado,

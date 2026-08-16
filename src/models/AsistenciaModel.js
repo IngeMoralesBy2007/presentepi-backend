@@ -18,12 +18,12 @@ const AsistenciaModel = {
         return rows.length > 0;
     },
 
-    async registrar({ eventoId, estudianteId, codigoCarneEscaneado, nombreCompletoSnapshot, programaSnapshot, rol }) {
+    async registrar({ eventoId, estudianteId, codigoCarneEscaneado, nombreCompletoSnapshot, programaSnapshot, rol, sede }) {
         const { rows } = await pool.query(
-            `INSERT INTO asistencias (evento_id, estudiante_id, codigo_carne_escaneado, nombre_completo_snapshot, programa_snapshot, rol)
-             VALUES ($1, $2, $3, $4, $5, $6)
+            `INSERT INTO asistencias (evento_id, estudiante_id, codigo_carne_escaneado, nombre_completo_snapshot, programa_snapshot, rol, sede)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)
              RETURNING *`,
-            [eventoId, estudianteId, codigoCarneEscaneado, nombreCompletoSnapshot, programaSnapshot, rol || 'ESTUDIANTE']
+            [eventoId, estudianteId, codigoCarneEscaneado, nombreCompletoSnapshot, programaSnapshot, rol || 'ESTUDIANTE', sede || null]
         );
         return rows[0];
     },

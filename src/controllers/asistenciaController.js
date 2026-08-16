@@ -16,7 +16,7 @@ const AsistenciaController = {
     // Si el documento ya existe, reutiliza ese registro; si no, lo crea en el momento.
     async registrarPorDatos(req, res) {
         const { eventoId } = req.params;
-        const { nombreCompleto, documento, programa, rol } = req.body;
+        const { nombreCompleto, documento, programa, rol, sede } = req.body;
 
         const ROLES_VALIDOS = ['ESTUDIANTE', 'DOCENTE', 'PERSONAL_ADMINISTRATIVO', 'OTRO'];
 
@@ -77,7 +77,8 @@ const AsistenciaController = {
             codigoCarneEscaneado: estudiante.codigo_carne,
             nombreCompletoSnapshot: estudiante.nombre_completo,
             programaSnapshot: estudiante.programa,
-            rol
+            rol,
+            sede: sede || evento.sede || null
         });
 
         res.status(201).json({ asistencia, estudiante });

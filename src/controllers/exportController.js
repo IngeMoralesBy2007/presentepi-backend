@@ -29,6 +29,7 @@ const ExportController = {
             { header: 'Evento', key: 'evento', width: 30 },
             { header: 'Nombre completo', key: 'nombre', width: 35 },
             { header: 'Rol', key: 'rol', width: 20 },
+            { header: 'Sede', key: 'sede', width: 20 },
             { header: 'Programa', key: 'programa', width: 30 },
             { header: 'Documento/Código', key: 'codigo', width: 20 },
             { header: 'Fecha', key: 'fecha', width: 14 }
@@ -39,6 +40,7 @@ const ExportController = {
                 evento: evento.nombre,
                 nombre: a.nombre_completo_snapshot,
                 rol: a.rol,
+                sede: a.sede,
                 programa: a.programa_snapshot,
                 codigo: a.codigo_carne_escaneado,
                 fecha: soloFecha(a.fecha_hora_registro)
@@ -74,6 +76,7 @@ const ExportController = {
         hojaResumen.columns = [{ header: 'Dato', key: 'dato', width: 30 }, { header: 'Valor', key: 'valor', width: 30 }];
         hojaResumen.getRow(1).font = { bold: true };
         hojaResumen.addRow({ dato: 'Evento', valor: evento.nombre });
+        hojaResumen.addRow({ dato: 'Sede', valor: evento.sede });
         hojaResumen.addRow({ dato: 'Lugar', valor: evento.lugar });
         hojaResumen.addRow({ dato: 'Fecha del evento', valor: soloFecha(evento.fecha_hora_inicio) });
         hojaResumen.addRow({ dato: 'Total asistentes (carné)', valor: asistenciasEstudiantes.length });

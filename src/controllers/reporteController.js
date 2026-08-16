@@ -5,7 +5,7 @@ const RegistroExternoModel = require('../models/RegistroExternoModel');
 
 function leerFiltros(query) {
     return {
-        lugar: query.sede || query.lugar || undefined,
+        sede: query.sede || undefined,
         nombre: query.nombre || undefined,
         fechaDesde: query.fechaDesde || undefined,
         fechaHasta: query.fechaHasta || undefined
@@ -65,7 +65,7 @@ const ReporteController = {
         eventos.forEach((e) => {
             hojaResumen.addRow({
                 evento: e.nombre,
-                sede: e.lugar,
+                sede: e.sede,
                 fecha: soloFecha(e.fecha_hora_inicio),
                 estado: e.estado,
                 totalEstudiantes: e.total_estudiantes,
@@ -103,7 +103,7 @@ const ReporteController = {
             asistencias.forEach((a) => {
                 hojaDetalle.addRow({
                     evento: evento.nombre,
-                    sede: evento.lugar,
+                    sede: a.sede || evento.sede,
                     fechaEvento: soloFecha(evento.fecha_hora_inicio),
                     tipo: 'Carné Politécnico',
                     nombre: a.nombre_completo_snapshot,
@@ -117,7 +117,7 @@ const ReporteController = {
             externos.forEach((r) => {
                 hojaDetalle.addRow({
                     evento: evento.nombre,
-                    sede: evento.lugar,
+                    sede: evento.sede,
                     fechaEvento: soloFecha(evento.fecha_hora_inicio),
                     tipo: 'Externo',
                     nombre: r.nombre_completo,
