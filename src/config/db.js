@@ -56,6 +56,7 @@ async function initSchema() {
             programa_snapshot TEXT,
             rol TEXT NOT NULL DEFAULT 'ESTUDIANTE',
             sede TEXT,
+            grupo TEXT,
             fecha_hora_registro TEXT NOT NULL DEFAULT (to_char(now() AT TIME ZONE 'America/Bogota', 'YYYY-MM-DD HH24:MI:SS')),
             UNIQUE (evento_id, estudiante_id)
         );
@@ -65,6 +66,7 @@ async function initSchema() {
     // aseguramos que tengan las columnas nuevas aunque se hayan creado sin ellas.
     await pool.query(`ALTER TABLE asistencias ADD COLUMN IF NOT EXISTS rol TEXT NOT NULL DEFAULT 'ESTUDIANTE';`);
     await pool.query(`ALTER TABLE asistencias ADD COLUMN IF NOT EXISTS sede TEXT;`);
+    await pool.query(`ALTER TABLE asistencias ADD COLUMN IF NOT EXISTS grupo TEXT;`);
     await pool.query(`ALTER TABLE eventos ADD COLUMN IF NOT EXISTS sede TEXT;`);
 
     await pool.query(`

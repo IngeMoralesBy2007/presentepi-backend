@@ -18,14 +18,23 @@ const AsistenciaModel = {
         return rows.length > 0;
     },
 
-    async registrar({ eventoId, estudianteId, codigoCarneEscaneado, nombreCompletoSnapshot, programaSnapshot, rol, sede }) {
+    async registrar({ eventoId, estudianteId, codigoCarneEscaneado, nombreCompletoSnapshot, programaSnapshot, rol, sede, grupo }) {
         const { rows } = await pool.query(
-            `INSERT INTO asistencias (evento_id, estudiante_id, codigo_carne_escaneado, nombre_completo_snapshot, programa_snapshot, rol, sede)
-             VALUES ($1, $2, $3, $4, $5, $6, $7)
+            `INSERT INTO asistencias (evento_id, estudiante_id, codigo_carne_escaneado, nombre_completo_snapshot, programa_snapshot, rol, sede, grupo)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
              RETURNING *`,
-            [eventoId, estudianteId, codigoCarneEscaneado, nombreCompletoSnapshot, programaSnapshot, rol || 'ESTUDIANTE', sede || null]
+            [eventoId, estudianteId, codigoCarneEscaneado, nombreCompletoSnapshot, programaSnapshot, rol || 'ESTUDIANTE', sede || null, grupo || null]
         );
         return rows[0];
+    },
+
+    async obtenerPorId(id) {
+        const { rows } = await pool.query('SELECT * FROM asistencias WHERE id = $1', [id]);
+        return rows[0] || null;
+    },
+
+    async eliminar(id) {
+        return pool.query('DELETE FROM asistencias WHERE id = $1', [id]);
     },
 
     async contarPorEvento(eventoId) {

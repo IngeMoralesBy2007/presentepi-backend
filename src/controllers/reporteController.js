@@ -3,6 +3,11 @@ const EventoModel = require('../models/EventoModel');
 const AsistenciaModel = require('../models/AsistenciaModel');
 const RegistroExternoModel = require('../models/RegistroExternoModel');
 
+const GRUPO_LABELS = { MANANA: 'Mañana', TARDE: 'Tarde', NOCHE: 'Noche' };
+function grupoLegible(grupo) {
+    return grupo ? (GRUPO_LABELS[grupo] || grupo) : '';
+}
+
 function leerFiltros(query) {
     return {
         sede: query.sede || undefined,
@@ -83,6 +88,7 @@ const ReporteController = {
             { header: 'Tipo', key: 'tipo', width: 14 },
             { header: 'Nombre completo', key: 'nombre', width: 32 },
             { header: 'Rol', key: 'rol', width: 20 },
+            { header: 'Grupo', key: 'grupo', width: 14 },
             { header: 'Programa', key: 'programa', width: 25 },
             { header: 'Documento/Código', key: 'codigo', width: 18 },
             { header: 'Fecha registro', key: 'fechaRegistro', width: 14 }
@@ -108,6 +114,7 @@ const ReporteController = {
                     tipo: 'Carné Politécnico',
                     nombre: a.nombre_completo_snapshot,
                     rol: a.rol,
+                    grupo: grupoLegible(a.grupo),
                     programa: a.programa_snapshot,
                     codigo: a.codigo_carne_escaneado,
                     fechaRegistro: soloFecha(a.fecha_hora_registro)

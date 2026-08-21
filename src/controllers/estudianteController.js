@@ -45,8 +45,17 @@ const EstudianteController = {
     async eliminar(req, res) {
         const existente = await EstudianteModel.obtenerPorId(req.params.id);
         if (!existente) return res.status(404).json({ error: 'Estudiante no encontrado' });
-        await EstudianteModel.eliminar(req.params.id);
-        res.status(204).send();
+        try {
+            await EstudianteModel.eliminar(req.params.id);
+            res.status(204).send();
+        } catch (err) {
+            if (err.code === '23503') { // foreign_key_violation en Postgres
+                return res.status(409).json({
+                    error: 'No se puede eliminar: esta persona ya tiene asistencia registrada en uno o más eventos. Elimina primero esos registros de asistencia si de verdad quieres borrarla.'
+                });
+            }
+            throw err;
+        }
     }
 };
 

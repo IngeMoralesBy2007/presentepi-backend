@@ -3,6 +3,11 @@ const EventoModel = require('../models/EventoModel');
 const AsistenciaModel = require('../models/AsistenciaModel');
 const RegistroExternoModel = require('../models/RegistroExternoModel');
 
+const GRUPO_LABELS = { MANANA: 'Mañana', TARDE: 'Tarde', NOCHE: 'Noche' };
+function grupoLegible(grupo) {
+    return grupo ? (GRUPO_LABELS[grupo] || grupo) : '';
+}
+
 const ExportController = {
 
     // GET /api/eventos/:eventoId/export/excel
@@ -29,6 +34,7 @@ const ExportController = {
             { header: 'Evento', key: 'evento', width: 30 },
             { header: 'Nombre completo', key: 'nombre', width: 35 },
             { header: 'Rol', key: 'rol', width: 20 },
+            { header: 'Grupo', key: 'grupo', width: 14 },
             { header: 'Sede', key: 'sede', width: 20 },
             { header: 'Programa', key: 'programa', width: 30 },
             { header: 'Documento/Código', key: 'codigo', width: 20 },
@@ -40,6 +46,7 @@ const ExportController = {
                 evento: evento.nombre,
                 nombre: a.nombre_completo_snapshot,
                 rol: a.rol,
+                grupo: grupoLegible(a.grupo),
                 sede: a.sede,
                 programa: a.programa_snapshot,
                 codigo: a.codigo_carne_escaneado,

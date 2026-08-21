@@ -26,7 +26,11 @@ const EventoController = {
     async actualizar(req, res) {
         const existente = await EventoModel.obtenerPorId(req.params.id);
         if (!existente) return res.status(404).json({ error: 'Evento no encontrado' });
-        const actualizado = await EventoModel.actualizar(req.params.id, req.body);
+        // El formulario de edicion no envia "estado" (eso se cambia aparte, con el
+        // selector de la lista) -> si no viene en el body, conservamos el actual
+        // en vez de dejar que quede vacio (la columna no admite valores nulos).
+        const datosActualizados = { ...req.body, estado: req.body.estado || existente.estado };
+        const actualizado = await EventoModel.actualizar(req.params.id, datosActualizados);
         res.json(actualizado);
     },
 

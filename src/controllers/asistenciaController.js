@@ -16,15 +16,19 @@ const AsistenciaController = {
     // Si el documento ya existe, reutiliza ese registro; si no, lo crea en el momento.
     async registrarPorDatos(req, res) {
         const { eventoId } = req.params;
-        const { nombreCompleto, documento, programa, rol, sede } = req.body;
+        const { nombreCompleto, documento, programa, rol, sede, grupo } = req.body;
 
         const ROLES_VALIDOS = ['ESTUDIANTE', 'DOCENTE', 'PERSONAL_ADMINISTRATIVO', 'OTRO'];
+        const GRUPOS_VALIDOS = ['MANANA', 'TARDE', 'NOCHE'];
 
         if (!nombreCompleto || !documento) {
             return res.status(400).json({ error: 'nombreCompleto y documento son obligatorios' });
         }
         if (!rol || !ROLES_VALIDOS.includes(rol)) {
             return res.status(400).json({ error: `rol es obligatorio y debe ser uno de: ${ROLES_VALIDOS.join(', ')}` });
+        }
+        if (grupo && !GRUPOS_VALIDOS.includes(grupo)) {
+            return res.status(400).json({ error: `grupo debe ser uno de: ${GRUPOS_VALIDOS.join(', ')}` });
         }
 
         // La busqueda del evento y la busqueda de la persona por documento son
@@ -78,10 +82,22 @@ const AsistenciaController = {
             nombreCompletoSnapshot: estudiante.nombre_completo,
             programaSnapshot: estudiante.programa,
             rol,
-            sede: sede || evento.sede || null
+            sede: sede || evento.sede || null,
+            grupo: grupo || null
         });
 
         res.status(201).json({ asistencia, estudiante });
+    },
+
+    // DELETE /api/eventos/:eventoId/asistencias/:id
+    async eliminar(req, res) {
+        const { eventoId, id } = req.params;
+        const asistencia = await AsistenciaModel.obtenerPorId(id);
+        if (!asistencia || String(asistencia.evento_id) !== String(eventoId)) {
+            return res.status(404).json({ error: 'Registro de asistencia no encontrado en este evento' });
+        }
+        await AsistenciaModel.eliminar(id);
+        res.status(204).send();
     }
 };
 
